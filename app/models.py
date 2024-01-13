@@ -94,4 +94,108 @@ class User(db.Model):
         except Exception as e:
             raise e
 
+class FamilyTree(db.Model):
+    """
+    Represents a family tree.
+
+    Attributes:
+        id (int): ID for the family tree.
+        name (str): The name of the family tree.
+        description (str): The description of the family tree.
+        user_id (int): The ID of the user who owns the family tree.
+        members (Relationship): One-to-many relationship with FamilyMember model.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    members = db.relationship('FamilyMember', backref='family_tree', lazy=True)
+
+    @staticmethod
+    def create_family_tree(name, description, user_id):
+        """
+        Create a new family tree.
+
+        Args:
+            name (str): The name of the family tree.
+            description (str): The description of the family tree.
+            user_id (int): The ID of the user creating the family tree.
+
+        Raises:
+            Exception: If an error occurs during creation.
+        """
+        try:
+            new_tree = FamilyTree(name=name, description=description, user_id=user_id)
+
+            db.session.add(new_tree)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    def get_all_trees(self):
+        """
+        Get all family trees associated with the user.
+
+        Returns:
+            list: List of FamilyTree objects associated with the user.
+
+        Raises:
+            Exception: If an error occurs during retrieval.
+        """
+        try:
+            return FamilyTree.query.filter_by(user_id=self.user_id).all()
+        except Exception as e:
+            raise e
+
+    def update_tree(self, name, description):
+        """
+        Update the information of the family tree.
+
+        Args:
+            name (str): The new name of the family tree.
+            description (str): The new description of the family tree.
+
+        Raises:
+            Exception: If an error occurs during update.
+        """
+        try:
+            self.name = name
+            self.description = description
+
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    def delete_tree(self):
+        """
+        Delete the family tree and its associated members.
+
+        Raises:
+            Exception: If an error occurs during deletion.
+        """
+        try:
+            FamilyMember.query.filter_by(tree_id=self.id).delete()
+
+            db.session.delete(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    def get_tree_members_count(self):
+        """
+        Get the count of members in the family tree.
+
+        Returns:
+            int: The number of members in the family tree.
+
+        Raises:
+            Exception: If an error occurs during retrieval.
+        """
+        try:
+            return FamilyMember.query.filter_by(tree_id=self.id).count()
+        except Exception as e:
+            raise e
 
